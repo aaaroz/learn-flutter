@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:myapp/widgets/list-view/item_list.dart';
+import 'widgets/contact/item.dart';
 import 'widgets/list-view/user_model.dart';
+import 'package:http/http.dart' as http;
 
 void main() {
   runApp(const MyApp());
@@ -14,6 +17,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -57,34 +61,130 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  final String serverUrl = 'http://localhost:3000';
+  final nameController = TextEditingController();
+
+  Future<List<Item>> fetchItems() async {
+    final response = await http.get(Uri.parse('$serverUrl/api/v1/items'));
+
+    if (response.statusCode == 200) {
+      final List<dynamic> itemList = jsonDecode(response.body);
+      final List<Item> items = itemList.map((item) {
+        return Item.fromJson(item);
+      }).toList();
+      return items;
+    } else {
+      throw Exception("Failed to fetch items");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.blueAccent,
-        title: const Text(
-          "ListView.Builder Ramdhan Mardiansyah",
-          style: TextStyle(color: Colors.white),
+      body: SafeArea(
+        child: Column(
+          children: [
+            FutureBuilder(
+                future: fetchItems(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    return ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: snapshot.data!.length,
+                        itemBuilder: (context, index) {
+                          final item = snapshot.data![index];
+                          return ListTile(
+                            title: Text(item.name),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  onPressed: () async {
+                                    // ignore: avoid_print
+                                    print("clicked!");
+                                  },
+                                  icon: const Icon(Icons.delete),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.edit),
+                                  onPressed: () {
+                                    showDialog(
+                                        context: context,
+                                        builder: (context) {
+                                          return AlertDialog(
+                                            title: const Text('Edit Item'),
+                                            content: TextFormField(
+                                              controller: nameController,
+                                              decoration: const InputDecoration(
+                                                labelText: 'Item name',
+                                              ),
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.pop(context);
+                                                },
+                                                child: const Text('Cancel'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  print("clicked!");
+                                                },
+                                                child: const Text('Edit'),
+                                              ),
+                                            ],
+                                          );
+                                        });
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        });
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text(snapshot.error.toString()));
+                  } else {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                })
+          ],
         ),
       ),
-      body: Container(
-        decoration: const BoxDecoration(color: Colors.white),
-        child: ListView.builder(
-            padding: const EdgeInsets.only(bottom: 24),
-            itemCount: data.length,
-            itemBuilder: (BuildContext context, int index) {
-              return ItemUser(index, data[index], (dataModel) {
-                onListClick(dataModel);
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          showDialog(
+              context: context,
+              builder: (context) {
+                return AlertDialog(
+                  title: const Text('Add Item'),
+                  content: TextFormField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Item name',
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        print("clicked!");
+                      },
+                      child: const Text('Add'),
+                    ),
+                  ],
+                );
               });
-            }),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+        },
+        tooltip: 'Add Item',
+        child: const Icon(Icons.add),
+      ),
     );
   }
 

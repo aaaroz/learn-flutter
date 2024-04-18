@@ -16,12 +16,13 @@ class ItemUser extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            CircleAvatar(
+            const CircleAvatar(
               radius: 24,
               backgroundColor: Colors.lightBlue,
-              child: Text(
-                data.codeName,
-                style: const TextStyle(color: Colors.white),
+              child: Icon(
+                Icons.person,
+                color: Colors.white,
+                size: 32,
               ),
             ),
             Expanded(
